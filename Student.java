@@ -1,0 +1,54 @@
+/*
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
+ * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
+ */
+package Assignment;
+
+/**
+ *
+ * @author User
+ */
+public class Student extends Person implements UserAuthentication{
+
+    private int studentId;
+    String course;
+    int year;
+    
+    Student(int name, String phoneNum, String email, String password
+    String studentId, String course, int year){
+    
+    super(name,phoneNum,email,password);
+    this.studentId = getStudentId();
+    this.course = course;
+    this.year = year;
+    
+    }
+ 
+    public int getStudentId() {
+        return studentId;
+    }
+    
+    public void bookAppointment(String apptId, Date date, String venue) {
+        Appointment appt = new Appointment(apptId, date, venue);
+        appt.schedule(apptId, date, venue);
+    }
+
+    public void giveFeedback() {
+        Feedback feedback = new Feedback();
+        feedback.displayFeedback();
+    }
+
+    @Override
+    public boolean login(String id, String password) {
+        return true;
+    }
+
+    @Override
+    public void logout() {}
+
+    @Override
+    public boolean changePassword(String password) {
+        this.password = password;
+        return true;
+    }
+}
