@@ -1,0 +1,7 @@
+public interface UserAuthentication {
+
+    public abstract boolean login(int id, String password);
+    public abstract void logout();
+    public abstract boolean changePassword(String password);
+     
+}
