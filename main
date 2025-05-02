@@ -1,0 +1,39 @@
+import java.util.ArrayList;
+import java.util.Date;
+
+public class Main {
+
+    public static void main(String[] args) {
+      
+        Student student = new Student("Majid", "0123456789" ,"majid05@gmail.com", "pass123", 101, "Computer Science", 2);
+
+        System.out.println("Logging in student...");
+        if (student.login(101, "pass123")) {
+            System.out.println("Login successful!\n");
+        } else {
+            System.out.println("Login failed!\n");
+        }
+
+        System.out.println("Booking appointment...");
+        student.bookAppointment("APT001", new Date(), "Lect Room 5, KICT");
+        System.out.println();
+
+        System.out.println("Giving feedback...");
+        student.giveFeedback("Caunselor is very good", 5);
+        System.out.println();
+
+        Staff staff = new Staff(201, "Mr. Akram", "0198765432", "akram91@gmail.com", "pass321");
+
+        System.out.println("Staff viewing appointment...");
+        staff.viewAppointment();
+        System.out.println();
+
+        System.out.println("Staff viewing feedback...");
+        ArrayList<String> feedbackList = new ArrayList<>();
+        feedbackList.add("Caunselor is very good");
+        staff.viewFeedback(feedbackList);
+        System.out.println();
+
+        student.logout();
+    }
+}
