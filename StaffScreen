@@ -1,0 +1,174 @@
+import javafx.scene.image.Image;
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.stage.Stage;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundImage;
+import javafx.scene.layout.BackgroundPosition;
+import javafx.scene.layout.BackgroundRepeat;
+import javafx.scene.layout.BackgroundSize;
+import javafx.scene.layout.StackPane;
+
+public class StaffScreen extends Application {
+    
+    private TextArea resultArea;
+    private Button viewButton;
+    private Button logoutButton;
+    
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Student Counseling System - Staff Dashboard");
+
+        ComboBox<String> viewOptions = new ComboBox<>();
+        viewOptions.getItems().addAll("View Appointments", "View Feedback");
+        viewOptions.setValue("View Appointments");
+
+        HBox actionBox = new HBox(10, viewOptions);
+        actionBox.setAlignment(Pos.CENTER);
+ 
+        resultArea = new TextArea();
+        resultArea.setEditable(false);
+        resultArea.setPrefRowCount(10);
+
+        viewButton = new Button("View");
+        logoutButton = new Button("Logout");
+        HBox buttonBox = new HBox(10, viewButton, logoutButton);
+        buttonBox.setAlignment(Pos.BOTTOM_RIGHT);
+
+        Image logoImage = new Image("file:iium1.jpg"); // Change path if needed
+        ImageView logoView = new ImageView(logoImage);
+        logoView.setFitWidth(150);  // Set width of the logo
+        logoView.setPreserveRatio(true);  // Maintain aspect ratio
+
+        VBox userInfoBox = new VBox(5);
+        userInfoBox.setAlignment(Pos.TOP_LEFT); // Align to top-left
+        userInfoBox.setPadding(new Insets(10));
+        userInfoBox.setStyle("-fx-alignment: top-left; -fx-padding: 10;");
+
+        Label nameLabel = new Label("Name: Mr. Akram");
+        nameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        nameLabel.setStyle("-fx-text-fill: white;");
+        Label idLabel = new Label("ID: 201");
+        idLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        idLabel.setStyle("-fx-text-fill: white;");
+        Label phoneLabel = new Label("Phone: 0198765432");
+        phoneLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        phoneLabel.setStyle("-fx-text-fill: white;");
+        Label emailLabel = new Label("Email: akram91@gmail.com");
+        emailLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
+        emailLabel.setStyle("-fx-text-fill: white;");
+
+        userInfoBox.getChildren().addAll(nameLabel, idLabel, phoneLabel, emailLabel);
+
+        HBox topBar = new HBox();
+        topBar.setAlignment(Pos.TOP_LEFT);
+        topBar.getChildren().add(userInfoBox);
+
+        HBox logoBox = new HBox(logoView);
+        logoBox.setAlignment(Pos.TOP_CENTER);
+
+        VBox content = new VBox(10, logoBox, topBar, actionBox, resultArea, buttonBox);
+        content.setAlignment(Pos.CENTER);
+        content.setPadding(new Insets(20));
+
+        viewButton.setOnAction(e -> {
+            String selection = viewOptions.getValue();
+            if ("View Appointments".equals(selection)) {
+                handleViewAppointments();
+            } else {
+                handleViewFeedback();
+            }
+        });
+
+        logoutButton.setOnAction(e -> {
+            primaryStage.close();
+            new LoginScreen().start(new Stage());
+        });
+   
+        BackgroundImage bgImage = new BackgroundImage(
+            new Image("file:iium2.jpg", 500, 400, false, true),
+            BackgroundRepeat.NO_REPEAT,
+            BackgroundRepeat.NO_REPEAT,
+            BackgroundPosition.CENTER,
+            BackgroundSize.DEFAULT
+        );
+        Background background = new Background(bgImage);
+
+        StackPane root = new StackPane();
+        root.setBackground(background);
+
+        root.getChildren().add(content);
+        Scene scene = new Scene(root, 500, 400);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void handleViewAppointments() {
+        File file = new File("appointments.txt");
+        if (!file.exists()) {
+            resultArea.setText("No appointments found.");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Appointments:\n\n");
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 4) {  // Updated to reflect new data format
+                    sb.append(String.format("Appointment ID: %s\nDate: %s\nTime: %s\nVenue: %s\n\n", parts[0], parts[1], parts[2], parts[3]));
+                }
+            }
+        } catch (IOException e) {
+            sb.append("Error reading appointments file.");
+        }
+        resultArea.setText(sb.toString());  // Updates text area with formatted appointments
+    }
+
+
+
+    private String generateStars(int rating) {
+        return "★".repeat(rating) + "☆".repeat(5 - rating); // Fills remaining space with hollow stars
+    }
+
+    private void handleViewFeedback() {
+        File file = new File("feedback.txt");
+        if (!file.exists()) {
+            resultArea.setText("No feedback available.");
+            return;
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("Student Feedback:\n\n");
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+            String[] parts = line.split("\\|");
+                if (parts.length == 2) {
+                    int rating = Integer.parseInt(parts[1]);
+                    sb.append(String.format("Feedback: %s\nRate: %s\n\n", parts[0], generateStars(rating)));
+                }
+            }
+        } catch (IOException | NumberFormatException e) {
+            sb.append("Error reading feedback file.");
+        }
+        resultArea.setText(sb.toString());
+    }
+}
