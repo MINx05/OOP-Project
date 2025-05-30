@@ -1,0 +1,37 @@
+import java.util.ArrayList;
+public class Staff extends Person{
+  
+ public int staffId;
+ 
+    public Staff(int staffId, String name, String phoneNum, String email, String password) {
+    super(name,phoneNum,email,password);
+        this.name = name;
+        this.phoneNum = phoneNum;
+        this.email = email;
+        this.password = password;
+        this.staffId= staffId;
+    }
+
+    public int getStaffId() {
+        return staffId;
+    }
+
+    // View appointment method
+    public void viewAppointment() {
+        System.out.println("Appointment Details:");
+        System.out.println("Date: 10 May 2025");
+        System.out.println("Venue: Room 305, Student Counseling Center");
+    }
+
+    // View feedback method
+    public void viewFeedback(ArrayList<String> feedbackList) {
+        if (feedbackList.isEmpty()) {
+            System.out.println("No feedback available yet.");
+        } else {
+            System.out.println("Feedback from Students:");
+            for (String feedback : feedbackList) {
+                System.out.println("- " + feedback);
+            }
+        }
+    }
+}
