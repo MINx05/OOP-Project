@@ -1,0 +1,245 @@
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.scene.text.Font;
+import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
+import javafx.stage.Stage;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import javafx.geometry.HPos;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+
+public class StudentScreen extends Application {
+    private ToggleGroup actionGroup;
+    private RadioButton bookAppointmentRadio;
+    private RadioButton giveFeedbackRadio;
+    private TextField apptIdField;
+    private TextField timeField;
+    private DatePicker datePicker;
+    private TextArea feedbackArea;
+    private Spinner<Integer> ratingSpinner;
+    private Button submitButton;
+    private Button logoutButton;
+    private ComboBox<String> venueCombo;
+    private GridPane appointmentGrid;
+    private GridPane feedbackGrid;
+    private VBox formContainer;
+    private Text feedbackTitle;
+    private Text appointmentTitle;
+
+    public static void main(String[] args) {
+        launch(args);
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Student Counseling System - Student Dashboard");
+
+        Image logoImage = new Image("file:iium1.jpg");
+        ImageView logoView = new ImageView(logoImage);
+        logoView.setFitWidth(200);
+        logoView.setPreserveRatio(true);
+
+        actionGroup = new ToggleGroup();
+        bookAppointmentRadio = new RadioButton("Book Appointment");
+        giveFeedbackRadio = new RadioButton("Give Feedback");
+        bookAppointmentRadio.setToggleGroup(actionGroup);
+        giveFeedbackRadio.setToggleGroup(actionGroup);
+        bookAppointmentRadio.setSelected(true);
+
+        HBox actionBox = new HBox(10, bookAppointmentRadio, giveFeedbackRadio);
+        actionBox.setAlignment(Pos.CENTER);
+
+        appointmentGrid = new GridPane();
+        appointmentGrid.setAlignment(Pos.CENTER);
+        appointmentGrid.setHgap(10);
+        appointmentGrid.setVgap(10);
+        appointmentGrid.setPadding(new Insets(15, 25, 15, 25));
+        appointmentGrid.setStyle("-fx-background-color: rgba(255, 255, 255, 0.85); -fx-background-radius: 10;");
+
+        appointmentTitle = new Text("Book Appointment");
+        GridPane.setHalignment(appointmentTitle, HPos.CENTER);
+        appointmentTitle.setFont(Font.font("Tahoma", FontWeight.NORMAL, 16));
+        appointmentGrid.add(appointmentTitle, 0, 0, 2, 1);
+
+        appointmentGrid.add(new Label("Appointment ID:"), 0, 1);
+        apptIdField = new TextField();
+        apptIdField.setPromptText("Use Student Id");
+        appointmentGrid.add(apptIdField, 1, 1);
+
+        appointmentGrid.add(new Label("Date:"), 0, 2);
+        datePicker = new DatePicker(LocalDate.now());
+        appointmentGrid.add(datePicker, 1, 2);
+
+        appointmentGrid.add(new Label("Time:"), 0, 3);
+        timeField = new TextField();
+        timeField.setPromptText("HH:MM");
+        appointmentGrid.add(timeField, 1, 3);
+
+        appointmentGrid.add(new Label("Venue:"), 0, 4);
+        venueCombo = new ComboBox<>();
+        venueCombo.getItems().addAll("Room 1", "Room 2", "Room 3", "Room 4", "Room 5");
+        venueCombo.setValue("Choose the venue");
+        appointmentGrid.add(venueCombo, 1, 4);
+
+        feedbackGrid = new GridPane();
+        feedbackGrid.setAlignment(Pos.CENTER);
+        feedbackGrid.setHgap(10);
+        feedbackGrid.setVgap(10);
+        feedbackGrid.setPadding(new Insets(15, 25, 15, 25));
+        feedbackGrid.setStyle("-fx-background-color: rgba(255, 255, 255, 0.85); -fx-background-radius: 10;");
+
+        feedbackTitle = new Text("Give Feedback");
+        GridPane.setHalignment(feedbackTitle, HPos.CENTER);
+        feedbackTitle.setFont(Font.font("Tahoma", FontWeight.NORMAL, 16));
+        feedbackGrid.add(feedbackTitle, 0, 0, 2, 1);
+
+        Label feedbackLabel = new Label("Feedback :");
+        feedbackLabel.setMinWidth(Region.USE_PREF_SIZE);
+        feedbackGrid.add(feedbackLabel, 0, 1);
+        feedbackArea = new TextArea();
+        feedbackArea.setPrefRowCount(4);
+        feedbackArea.setPrefHeight(80);
+        feedbackArea.setWrapText(true);
+        feedbackGrid.add(feedbackArea, 1, 1);
+
+        Label ratingLabel = new Label("Rating (1-5):");
+        ratingLabel.setMinWidth(Region.USE_PREF_SIZE);
+        feedbackGrid.add(ratingLabel, 0, 2);
+        ratingSpinner = new Spinner<>(1, 5, 3);
+        ratingSpinner.setPrefWidth(80);
+        feedbackArea.setWrapText(true);
+        feedbackGrid.add(ratingSpinner, 1, 2);
+
+        formContainer = new VBox();
+        formContainer.getChildren().add(appointmentGrid);
+        formContainer.setAlignment(Pos.TOP_CENTER);
+        formContainer.setPadding(new Insets(5));
+
+        submitButton = new Button("Submit");
+        logoutButton = new Button("Logout");
+
+        HBox buttonBox = new HBox(10, submitButton, logoutButton);
+        buttonBox.setAlignment(Pos.BOTTOM_CENTER);
+        buttonBox.setPadding(new Insets(0, 20, 20, 0));
+
+        VBox roots = new VBox(10, logoView, actionBox, formContainer, buttonBox);
+        roots.setAlignment(Pos.TOP_CENTER);
+        roots.setPadding(new Insets(10));
+
+        // Set background image
+        BackgroundImage bgImage = new BackgroundImage(
+                new Image("file:iium2.jpg", 400, 450, false, true),
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundRepeat.NO_REPEAT,
+                BackgroundPosition.CENTER,
+                new BackgroundSize(100, 100, true, true, true, false)
+        );
+        Background background = new Background(bgImage);
+
+        // Wrap everything in StackPane for layering
+        StackPane root = new StackPane();
+        root.setBackground(background);
+        root.getChildren().add(roots);
+
+        // Event handlers
+        bookAppointmentRadio.setOnAction(e -> {
+            formContainer.getChildren().clear();
+            formContainer.getChildren().add(appointmentGrid);
+        });
+
+        giveFeedbackRadio.setOnAction(e -> {
+            formContainer.getChildren().clear();
+            formContainer.getChildren().add(feedbackGrid);
+        });
+
+        submitButton.setOnAction(e -> {
+            if (bookAppointmentRadio.isSelected()) {
+                handleBookAppointment();
+            } else {
+                handleGiveFeedback();
+            }
+        });
+
+        logoutButton.setOnAction(e -> {
+            primaryStage.close();
+            new LoginScreen().start(new Stage());
+        });
+
+        Scene scene = new Scene(root, 400, 450);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private void handleBookAppointment() {
+        String apptId = apptIdField.getText();
+        LocalDate selectedDate = datePicker.getValue();
+        String dateStr = selectedDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
+        String timeStr = timeField.getText().trim();
+        String venue = venueCombo.getValue();
+
+        if (!timeStr.matches("^([01]?[0-9]|2[0-3]):[0-5][0-9]$")) {
+            showAlert("Invalid Time", "Please enter time in HH:MM format (e.g., 14:30)");
+            return;
+        }
+
+        if (apptId.isEmpty() || venue == null || venue.equals("Choose the venue")) {
+            showAlert("Input Error", "All fields are required.");
+            return;
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("appointments.txt", true))) {
+            writer.write(String.format("%s,%s,%s,%s%n", apptId, dateStr, timeStr, venue));
+            showAlert("Success", "Appointment booked successfully!");
+            clearAppointmentFields();
+        } catch (IOException e) {
+            showAlert("Error", "Failed to save appointment.");
+        }
+    }
+
+    private void handleGiveFeedback() {
+        String message = feedbackArea.getText();
+        int rating = ratingSpinner.getValue();
+
+        if (message.isEmpty()) {
+            showAlert("Input Error", "Feedback message cannot be empty.");
+            return;
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("feedback.txt", true))) {
+            writer.write(String.format("%s|%d%n", message, rating));
+            showAlert("Success", "Thank you for your feedback!");
+            clearFeedbackFields();
+        } catch (IOException e) {
+            showAlert("Error", "Failed to save feedback.");
+        }
+    }
+
+    private void clearAppointmentFields() {
+        apptIdField.clear();
+        datePicker.setValue(LocalDate.now());
+        timeField.clear();
+        venueCombo.setValue("Choose the venue");
+    }
+
+    private void clearFeedbackFields() {
+        feedbackArea.clear();
+        ratingSpinner.getValueFactory().setValue(3);
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}
