@@ -11,18 +11,30 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
+
 public class LoginScreen extends Application {
 
     private ComboBox<String> userTypeCombo;
     private TextField idField;
     private PasswordField passwordField;
     private Button loginButton;
+    private Button registerButton;
 
-    // Simple user database simulation
-    private static final String STUDENT_ID = "101";
-    private static final String STUDENT_PASSWORD = "123";
-    private static final String STAFF_ID = "201";
-    private static final String STAFF_PASSWORD = "321";
+    private Map<String, String> studentUsers = new HashMap<>();
+    private Map<String, String> staffUsers = new HashMap<>();
+
+    private static final String STUDENT_FILE = "users_student.txt";
+
+    private void initializeStaffUsers() {
+        staffUsers.put("staff01", "pass01");
+        staffUsers.put("staff02", "pass02");
+        staffUsers.put("staff03", "pass03");
+        staffUsers.put("staff04", "pass04");
+        staffUsers.put("staff05", "pass05");
+    }
 
     public static void main(String[] args) {
         launch(args);
@@ -32,27 +44,27 @@ public class LoginScreen extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("IIUM Counseling System - Login");
 
-        // Logo image at the top
-        Image logoImage = new Image("file:iium1.jpg");
-        ImageView logoView = new ImageView(logoImage);
-        logoView.setFitWidth(200);
-        logoView.setPreserveRatio(true);
+        initializeStaffUsers();
+        loadStudentUsers();
 
-        // ComboBox for user type
+        Image logoImage = new Image("file:iium2.jpg");
+        ImageView logoView = new ImageView(logoImage);
+        logoView.setFitWidth(300);
+        logoView.setPreserveRatio(true);
+        
         userTypeCombo = new ComboBox<>();
         userTypeCombo.getItems().addAll("Student", "Staff");
         userTypeCombo.setPromptText("Select User Type");
         userTypeCombo.setMaxWidth(200);
 
-        HBox userTypeBox = new HBox(10,userTypeCombo);
-        userTypeBox.setAlignment(Pos.CENTER);
+        HBox userTypeBox = new HBox(userTypeCombo);
+        userTypeBox.setAlignment(Pos.TOP_CENTER);
 
-        // Login form layout
         GridPane loginGrid = new GridPane();
         loginGrid.setAlignment(Pos.CENTER);
         loginGrid.setHgap(10);
         loginGrid.setVgap(10);
-        loginGrid.setPadding(new Insets(5));
+        loginGrid.setPadding(new Insets(15));
         loginGrid.setStyle("-fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 10;");
 
         Text scenetitle = new Text("Welcome to IIUM Counselling System");
@@ -72,20 +84,30 @@ public class LoginScreen extends Application {
         loginGrid.add(passwordField, 1, 3);
 
         loginButton = new Button("Login");
-        HBox buttonBox = new HBox(10, loginButton);
+        registerButton = new Button("Register");
+
+        HBox buttonBox = new HBox(10, loginButton, registerButton);
         buttonBox.setAlignment(Pos.BOTTOM_RIGHT);
         loginGrid.add(buttonBox, 1, 4);
 
         loginButton.setOnAction(e -> handleLogin(primaryStage));
+        registerButton.setOnAction(e -> handleRegister());
 
-        // VBox with logo and login form
-        VBox content = new VBox(10, logoView, loginGrid);
+        userTypeCombo.setOnAction(e -> {
+            String selected = userTypeCombo.getValue();
+            if ("Staff".equals(selected)) {
+                registerButton.setVisible(false);
+            } else {
+                registerButton.setVisible(true);
+            }
+        });
+
+        VBox content = new VBox(15, logoView, loginGrid);
         content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(10));
+        content.setPadding(new Insets(20));
 
-        // Set background image
         BackgroundImage bgImage = new BackgroundImage(
-                new Image("file:iium2.jpg", 400, 450, false, true),
+                new Image("file:background2.jpg", 400, 450, false, true),
                 BackgroundRepeat.NO_REPEAT,
                 BackgroundRepeat.NO_REPEAT,
                 BackgroundPosition.CENTER,
@@ -93,7 +115,6 @@ public class LoginScreen extends Application {
         );
         Background background = new Background(bgImage);
 
-        // Root StackPane
         StackPane root = new StackPane();
         root.setBackground(background);
         root.getChildren().add(content);
@@ -103,9 +124,40 @@ public class LoginScreen extends Application {
         primaryStage.show();
     }
 
+    private void loadStudentUsers() {
+        studentUsers = loadUserFile(STUDENT_FILE);
+    }
+
+    private Map<String, String> loadUserFile(String filename) {
+        Map<String, String> users = new HashMap<>();
+        File file = new File(filename);
+        if (!file.exists()) {
+            return users;
+        }
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line;
+            while((line = br.readLine()) != null) {
+                String[] parts = line.split(",");
+                if(parts.length == 2) {
+                    users.put(parts[0].trim(), parts[1].trim());
+                }
+            }
+        } catch(IOException e) {
+          
+        }
+        return users;
+    }
+
+    private void saveUser(String filename, String id, String password) throws IOException {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(filename, true))) {
+            writer.write(id + "," + password);
+            writer.newLine();
+        }
+    }
+
     private void handleLogin(Stage primaryStage) {
-        String id = idField.getText();
-        String password = passwordField.getText();
+        String id = idField.getText().trim();
+        String password = passwordField.getText().trim();
         String selectedRole = userTypeCombo.getValue();
 
         if (selectedRole == null) {
@@ -113,20 +165,68 @@ public class LoginScreen extends Application {
             return;
         }
 
-        if (selectedRole.equals("Student")) {
-            if (id.equals(STUDENT_ID) && password.equals(STUDENT_PASSWORD)) {
-                new StudentScreen().start(new Stage());
-                primaryStage.close();
+        if (id.isEmpty() || password.isEmpty()) {
+            showAlert("Login Failed", "ID and Password cannot be empty.");
+            return;
+        }
+
+        if ("Student".equals(selectedRole)) {
+            if (studentUsers.containsKey(id) && studentUsers.get(id).equals(password)) {
+                try {
+                    StudentScreen studentScreen = new StudentScreen();
+                    studentScreen.setStudentId(id);
+                    studentScreen.start(new Stage());
+                    primaryStage.close();
+                } catch (Exception ex) {
+                    showAlert("Error", "Failed to open Student Screen.");
+                    ex.printStackTrace();
+                }
             } else {
                 showAlert("Login Failed", "Invalid student ID or password.");
             }
-        } else {
-            if (id.equals(STAFF_ID) && password.equals(STAFF_PASSWORD)) {
-                new StaffScreen().start(new Stage());
-                primaryStage.close();
+        } else if ("Staff".equals(selectedRole)) {
+            if (staffUsers.containsKey(id) && staffUsers.get(id).equals(password)) {
+                try {
+                    StaffScreen staffScreen = new StaffScreen();
+                    staffScreen.setStaffId(id);
+                    staffScreen.start(new Stage());
+                    primaryStage.close();
+                } catch (Exception ex) {
+                    showAlert("Error", "Failed to open Staff Screen.");
+                    ex.printStackTrace();
+                }
             } else {
                 showAlert("Login Failed", "Invalid staff ID or password.");
             }
+        }
+    }
+
+    private void handleRegister() {
+        String id = idField.getText().trim();
+        String password = passwordField.getText().trim();
+        String selectedRole = userTypeCombo.getValue();
+
+        if (selectedRole == null || !"Student".equals(selectedRole)) {
+            showAlert("Registration Failed", "Only students can register.");
+            return;
+        }
+
+        if (id.isEmpty() || password.isEmpty()) {
+            showAlert("Registration Failed", "ID and Password cannot be empty.");
+            return;
+        }
+
+        if (studentUsers.containsKey(id)) {
+            showAlert("Registration Failed", "User ID already exists.");
+            return;
+        }
+
+        try {
+            saveUser(STUDENT_FILE, id, password);
+            studentUsers.put(id, password);
+            showAlert("Registration Success", "User registered successfully. You can now login.");
+        } catch (IOException e) {
+            showAlert("Registration Failed", "Failed to save user.");
         }
     }
 
@@ -136,5 +236,8 @@ public class LoginScreen extends Application {
         alert.setHeaderText(null);
         alert.setContentText(message);
         alert.showAndWait();
+    }
+
+    public void setStaffId(String id) {
     }
 }
