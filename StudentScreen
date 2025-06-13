@@ -8,11 +8,13 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+
 import javafx.geometry.HPos;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -34,6 +36,11 @@ public class StudentScreen extends Application {
     private VBox formContainer;
     private Text feedbackTitle;
     private Text appointmentTitle;
+    private static String studentId;
+
+    public static void setStudentId(String id) {
+        studentId = id;
+    }
 
     public static void main(String[] args) {
         launch(args);
@@ -43,9 +50,9 @@ public class StudentScreen extends Application {
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Student Counseling System - Student Dashboard");
 
-        Image logoImage = new Image("file:iium1.jpg");
+        Image logoImage = new Image("file:iium2.jpg");
         ImageView logoView = new ImageView(logoImage);
-        logoView.setFitWidth(200);
+        logoView.setFitWidth(300);
         logoView.setPreserveRatio(true);
 
         actionGroup = new ToggleGroup();
@@ -87,7 +94,7 @@ public class StudentScreen extends Application {
         appointmentGrid.add(new Label("Venue:"), 0, 4);
         venueCombo = new ComboBox<>();
         venueCombo.getItems().addAll("Room 1", "Room 2", "Room 3", "Room 4", "Room 5");
-        venueCombo.setValue("Choose the venue");
+        venueCombo.setPromptText("Choose the venue");
         appointmentGrid.add(venueCombo, 1, 4);
 
         feedbackGrid = new GridPane();
@@ -102,21 +109,16 @@ public class StudentScreen extends Application {
         feedbackTitle.setFont(Font.font("Tahoma", FontWeight.NORMAL, 16));
         feedbackGrid.add(feedbackTitle, 0, 0, 2, 1);
 
-        Label feedbackLabel = new Label("Feedback :");
-        feedbackLabel.setMinWidth(Region.USE_PREF_SIZE);
-        feedbackGrid.add(feedbackLabel, 0, 1);
+        feedbackGrid.add(new Label("Feedback:"), 0, 1);
         feedbackArea = new TextArea();
         feedbackArea.setPrefRowCount(4);
         feedbackArea.setPrefHeight(80);
         feedbackArea.setWrapText(true);
         feedbackGrid.add(feedbackArea, 1, 1);
 
-        Label ratingLabel = new Label("Rating (1-5):");
-        ratingLabel.setMinWidth(Region.USE_PREF_SIZE);
-        feedbackGrid.add(ratingLabel, 0, 2);
+        feedbackGrid.add(new Label("Rating (1–5):"), 0, 2);
         ratingSpinner = new Spinner<>(1, 5, 3);
         ratingSpinner.setPrefWidth(80);
-        feedbackArea.setWrapText(true);
         feedbackGrid.add(ratingSpinner, 1, 2);
 
         formContainer = new VBox();
@@ -135,9 +137,8 @@ public class StudentScreen extends Application {
         roots.setAlignment(Pos.TOP_CENTER);
         roots.setPadding(new Insets(10));
 
-        // Set background image
         BackgroundImage bgImage = new BackgroundImage(
-                new Image("file:iium2.jpg", 400, 450, false, true),
+                new Image("file:background2.jpg", 400, 450, false, true),
                 BackgroundRepeat.NO_REPEAT,
                 BackgroundRepeat.NO_REPEAT,
                 BackgroundPosition.CENTER,
@@ -145,12 +146,10 @@ public class StudentScreen extends Application {
         );
         Background background = new Background(bgImage);
 
-        // Wrap everything in StackPane for layering
         StackPane root = new StackPane();
         root.setBackground(background);
         root.getChildren().add(roots);
 
-        // Event handlers
         bookAppointmentRadio.setOnAction(e -> {
             formContainer.getChildren().clear();
             formContainer.getChildren().add(appointmentGrid);
@@ -180,19 +179,19 @@ public class StudentScreen extends Application {
     }
 
     private void handleBookAppointment() {
-        String apptId = apptIdField.getText();
+        String apptId = apptIdField.getText().trim();
         LocalDate selectedDate = datePicker.getValue();
         String dateStr = selectedDate.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"));
         String timeStr = timeField.getText().trim();
         String venue = venueCombo.getValue();
 
-        if (!timeStr.matches("^([01]?[0-9]|2[0-3]):[0-5][0-9]$")) {
-            showAlert("Invalid Time", "Please enter time in HH:MM format (e.g., 14:30)");
+        if (apptId.isEmpty() || venue == null) {
+            showAlert("Input Error", "All fields are required.");
             return;
         }
 
-        if (apptId.isEmpty() || venue == null || venue.equals("Choose the venue")) {
-            showAlert("Input Error", "All fields are required.");
+        if (!timeStr.matches("^([01]?[0-9]|2[0-3]):[0-5][0-9]$")) {
+            showAlert("Invalid Time", "Please enter time in HH:MM format (e.g., 14:30)");
             return;
         }
 
@@ -206,7 +205,7 @@ public class StudentScreen extends Application {
     }
 
     private void handleGiveFeedback() {
-        String message = feedbackArea.getText();
+        String message = feedbackArea.getText().trim();
         int rating = ratingSpinner.getValue();
 
         if (message.isEmpty()) {
@@ -227,7 +226,7 @@ public class StudentScreen extends Application {
         apptIdField.clear();
         datePicker.setValue(LocalDate.now());
         timeField.clear();
-        venueCombo.setValue("Choose the venue");
+        venueCombo.setValue(null);
     }
 
     private void clearFeedbackFields() {
