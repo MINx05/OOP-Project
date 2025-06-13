@@ -1,174 +1,276 @@
-import javafx.scene.image.Image;
 import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.*;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundImage;
-import javafx.scene.layout.BackgroundPosition;
-import javafx.scene.layout.BackgroundRepeat;
-import javafx.scene.layout.BackgroundSize;
-import javafx.scene.layout.StackPane;
+
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 
 public class StaffScreen extends Application {
-    
-    private TextArea resultArea;
-    private Button viewButton;
-    private Button logoutButton;
-    
-    public static void main(String[] args) {
-        launch(args);
+
+    private Stage primaryStage;
+
+    private ObservableList<String> appointments = FXCollections.observableArrayList();
+    private ObservableList<String> feedbacks = FXCollections.observableArrayList();
+
+    private final String APPOINTMENTS_FILE = "appointments.txt";
+    private final String FEEDBACK_FILE = "feedback.txt";
+
+    private ListView<String> listView;
+    private TextField editField;
+    private Button deleteBtn;
+    private Button updateBtn;
+    private Button backBtn;
+    private Button logoutBtn;
+
+    private enum ViewMode { NONE, APPOINTMENTS, FEEDBACK }
+
+    private ViewMode currentView = ViewMode.NONE;
+
+    private static String staffId;
+
+    public static void setStaffId(String id) {
+        staffId = id;
     }
 
     @Override
     public void start(Stage primaryStage) {
+        this.primaryStage = primaryStage;
         primaryStage.setTitle("Student Counseling System - Staff Dashboard");
 
-        ComboBox<String> viewOptions = new ComboBox<>();
-        viewOptions.getItems().addAll("View Appointments", "View Feedback");
-        viewOptions.setValue("View Appointments");
+        loadAppointments();
+        loadFeedback();
 
-        HBox actionBox = new HBox(10, viewOptions);
-        actionBox.setAlignment(Pos.CENTER);
- 
-        resultArea = new TextArea();
-        resultArea.setEditable(false);
-        resultArea.setPrefRowCount(10);
+        StackPane root = new StackPane();
+        Image bgImage = new Image("file:background2.jpg");  // Put your background image path here
+        BackgroundImage bg = new BackgroundImage(bgImage, BackgroundRepeat.NO_REPEAT, BackgroundRepeat.NO_REPEAT,
+        BackgroundPosition.CENTER, new BackgroundSize(700, 500, false, false, false, false));
+        root.setBackground(new Background(bg));
 
-        viewButton = new Button("View");
-        logoutButton = new Button("Logout");
-        HBox buttonBox = new HBox(10, viewButton, logoutButton);
-        buttonBox.setAlignment(Pos.BOTTOM_RIGHT);
+        VBox mainBox = new VBox(15);
+        mainBox.setPadding(new Insets(20));
+        mainBox.setAlignment(Pos.TOP_CENTER);
+        mainBox.setMaxWidth(450);
+        mainBox.setMaxHeight(450);
+        mainBox.setStyle("-fx-background-color: rgba(255, 255, 255, 0.85); -fx-background-radius: 15;");
 
-        Image logoImage = new Image("file:iium1.jpg"); // Change path if needed
+        Image logoImage = new Image("file:iium2.jpg");  
         ImageView logoView = new ImageView(logoImage);
-        logoView.setFitWidth(150);  // Set width of the logo
-        logoView.setPreserveRatio(true);  // Maintain aspect ratio
+        logoView.setFitHeight(80);
+        logoView.setPreserveRatio(true);
 
-        VBox userInfoBox = new VBox(5);
-        userInfoBox.setAlignment(Pos.TOP_LEFT); // Align to top-left
-        userInfoBox.setPadding(new Insets(10));
-        userInfoBox.setStyle("-fx-alignment: top-left; -fx-padding: 10;");
+        Text title = new Text("Staff Dashboard");
+        title.setFont(Font.font("Tahoma", FontWeight.BOLD, 24));
+        title.setFill(Color.DARKSLATEGRAY);
 
-        Label nameLabel = new Label("Name: Mr. Akram");
-        nameLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        nameLabel.setStyle("-fx-text-fill: white;");
-        Label idLabel = new Label("ID: 201");
-        idLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        idLabel.setStyle("-fx-text-fill: white;");
-        Label phoneLabel = new Label("Phone: 0198765432");
-        phoneLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        phoneLabel.setStyle("-fx-text-fill: white;");
-        Label emailLabel = new Label("Email: akram91@gmail.com");
-        emailLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
-        emailLabel.setStyle("-fx-text-fill: white;");
+        Text welcomeText = new Text("Welcome " + staffId);
+        welcomeText.setFont(Font.font("Tahoma", FontWeight.NORMAL, 18));
+        welcomeText.setFill(Color.DARKSLATEGRAY);
 
-        userInfoBox.getChildren().addAll(nameLabel, idLabel, phoneLabel, emailLabel);
+        Button viewAppointmentsBtn = new Button("View Appointments");
+        Button viewFeedbackBtn = new Button("View Feedback");
 
-        HBox topBar = new HBox();
-        topBar.setAlignment(Pos.TOP_LEFT);
-        topBar.getChildren().add(userInfoBox);
+        HBox choiceBox = new HBox(20, viewAppointmentsBtn, viewFeedbackBtn);
+        choiceBox.setAlignment(Pos.CENTER);
 
-        HBox logoBox = new HBox(logoView);
-        logoBox.setAlignment(Pos.TOP_CENTER);
+        listView = new ListView<>();
+        listView.setPrefHeight(200);
 
-        VBox content = new VBox(10, logoBox, topBar, actionBox, resultArea, buttonBox);
-        content.setAlignment(Pos.CENTER);
-        content.setPadding(new Insets(20));
+        editField = new TextField();
+        editField.setPromptText("Edit selected item here");
 
-        viewButton.setOnAction(e -> {
-            String selection = viewOptions.getValue();
-            if ("View Appointments".equals(selection)) {
-                handleViewAppointments();
-            } else {
-                handleViewFeedback();
+        deleteBtn = new Button("Delete");
+        updateBtn = new Button("Update");
+        backBtn = new Button("Back");
+        logoutBtn = new Button("Logout");
+
+        HBox actionBtnBox = new HBox(15, updateBtn, deleteBtn, backBtn, logoutBtn);
+        actionBtnBox.setAlignment(Pos.CENTER);
+
+        listView.setVisible(false);
+        editField.setVisible(false);
+        deleteBtn.setVisible(false);
+        updateBtn.setVisible(false);
+        backBtn.setVisible(false);
+
+        mainBox.getChildren().addAll(logoView, title, welcomeText, choiceBox, listView, editField, actionBtnBox);
+        root.getChildren().add(mainBox);
+
+        viewAppointmentsBtn.setOnAction(e -> showAppointmentsView());
+        viewFeedbackBtn.setOnAction(e -> showFeedbackView());
+
+        backBtn.setOnAction(e -> {
+            currentView = ViewMode.NONE;
+            listView.setVisible(false);
+            editField.setVisible(false);
+            deleteBtn.setVisible(false);
+            updateBtn.setVisible(false);
+            backBtn.setVisible(false);
+            listView.getItems().clear();
+            editField.clear();
+        });
+
+        logoutBtn.setOnAction(e -> {
+            primaryStage.close();
+            try {
+                new LoginScreen().start(new Stage());
+            } catch (Exception ex) {
+                ex.printStackTrace();
             }
         });
 
-        logoutButton.setOnAction(e -> {
-            primaryStage.close();
-            new LoginScreen().start(new Stage());
+        deleteBtn.setOnAction(e -> {
+            if (currentView == ViewMode.APPOINTMENTS) {
+                deleteSelectedAppointment();
+            } else if (currentView == ViewMode.FEEDBACK) {
+                deleteSelectedFeedback();
+            }
         });
-   
-        BackgroundImage bgImage = new BackgroundImage(
-            new Image("file:iium2.jpg", 500, 400, false, true),
-            BackgroundRepeat.NO_REPEAT,
-            BackgroundRepeat.NO_REPEAT,
-            BackgroundPosition.CENTER,
-            BackgroundSize.DEFAULT
-        );
-        Background background = new Background(bgImage);
 
-        StackPane root = new StackPane();
-        root.setBackground(background);
+        updateBtn.setOnAction(e -> {
+            if (currentView == ViewMode.APPOINTMENTS) {
+                updateSelectedAppointment();
+            } else if (currentView == ViewMode.FEEDBACK) {
+                // No update for feedback, do nothing
+            }
+        });
 
-        root.getChildren().add(content);
-        Scene scene = new Scene(root, 500, 400);
+        listView.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+            editField.setText(newVal != null ? newVal : "");
+        });
+
+        Scene scene = new Scene(root, 500, 500);
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
-    private void handleViewAppointments() {
-        File file = new File("appointments.txt");
-        if (!file.exists()) {
-            resultArea.setText("No appointments found.");
-            return;
-        }
+    private void showAppointmentsView() {
+        currentView = ViewMode.APPOINTMENTS;
+        listView.setItems(appointments);
+        listView.setVisible(true);
+        editField.setVisible(true);
+        deleteBtn.setVisible(true);
+        updateBtn.setVisible(true);
+        backBtn.setVisible(true);
+        editField.clear();
+    }
 
-        StringBuilder sb = new StringBuilder();
-        sb.append("Appointments:\n\n");
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                String[] parts = line.split(",");
-                if (parts.length == 4) {  // Updated to reflect new data format
-                    sb.append(String.format("Appointment ID: %s\nDate: %s\nTime: %s\nVenue: %s\n\n", parts[0], parts[1], parts[2], parts[3]));
-                }
+    private void showFeedbackView() {
+        currentView = ViewMode.FEEDBACK;
+        listView.setItems(feedbacks);
+        listView.setVisible(true);
+        editField.setVisible(true);
+        deleteBtn.setVisible(true);
+        updateBtn.setVisible(false);  
+        backBtn.setVisible(true);
+        editField.clear();
+    }
+
+    private void loadAppointments() {
+        appointments.clear();
+        try {
+            if (!Files.exists(Paths.get(APPOINTMENTS_FILE))) {
+                Files.createFile(Paths.get(APPOINTMENTS_FILE));
+            }
+            List<String> lines = Files.readAllLines(Paths.get(APPOINTMENTS_FILE));
+            appointments.addAll(lines);
+        } catch (IOException e) {
+            showAlert("Error", "Failed to load appointments");
+        }
+    }
+
+    private void loadFeedback() {
+        feedbacks.clear();
+        try {
+            if (!Files.exists(Paths.get(FEEDBACK_FILE))) {
+                Files.createFile(Paths.get(FEEDBACK_FILE));
+            }
+            List<String> lines = Files.readAllLines(Paths.get(FEEDBACK_FILE));
+            feedbacks.addAll(lines);
+        } catch (IOException e) {
+            showAlert("Error", "Failed to load feedback");
+        }
+    }
+
+    private void deleteSelectedAppointment() {
+        int selectedIndex = listView.getSelectionModel().getSelectedIndex();
+        if (selectedIndex >= 0) {
+            appointments.remove(selectedIndex);
+            saveAppointments();
+            editField.clear();
+        } else {
+            showAlert("Selection Error", "Please select an appointment to delete.");
+        }
+    }
+
+    private void updateSelectedAppointment() {
+        int selectedIndex = listView.getSelectionModel().getSelectedIndex();
+        String newText = editField.getText().trim();
+        if (selectedIndex >= 0 && !newText.isEmpty()) {
+            appointments.set(selectedIndex, newText);
+            saveAppointments();
+        } else {
+            showAlert("Input Error", "Select an appointment and enter valid text to update.");
+        }
+    }
+
+    private void deleteSelectedFeedback() {
+        int selectedIndex = listView.getSelectionModel().getSelectedIndex();
+        if (selectedIndex >= 0) {
+            feedbacks.remove(selectedIndex);
+            saveFeedback();
+            editField.clear();
+        } else {
+            showAlert("Selection Error", "Please select a feedback entry to delete.");
+        }
+    }
+
+    private void saveAppointments() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(APPOINTMENTS_FILE))) {
+            for (String appointment : appointments) {
+                writer.write(appointment);
+                writer.newLine();
             }
         } catch (IOException e) {
-            sb.append("Error reading appointments file.");
+            showAlert("Error", "Failed to save appointments.");
         }
-        resultArea.setText(sb.toString());  // Updates text area with formatted appointments
     }
 
-
-
-    private String generateStars(int rating) {
-        return "★".repeat(rating) + "☆".repeat(5 - rating); // Fills remaining space with hollow stars
-    }
-
-    private void handleViewFeedback() {
-        File file = new File("feedback.txt");
-        if (!file.exists()) {
-            resultArea.setText("No feedback available.");
-            return;
-        }
-
-        StringBuilder sb = new StringBuilder();
-        sb.append("Student Feedback:\n\n");
-        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-            String[] parts = line.split("\\|");
-                if (parts.length == 2) {
-                    int rating = Integer.parseInt(parts[1]);
-                    sb.append(String.format("Feedback: %s\nRate: %s\n\n", parts[0], generateStars(rating)));
-                }
+    private void saveFeedback() {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FEEDBACK_FILE))) {
+            for (String fb : feedbacks) {
+                writer.write(fb);
+                writer.newLine();
             }
-        } catch (IOException | NumberFormatException e) {
-            sb.append("Error reading feedback file.");
+        } catch (IOException e) {
+            showAlert("Error", "Failed to save feedback.");
         }
-        resultArea.setText(sb.toString());
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    public static void main(String[] args) {
+        
+        setStaffId(staffId);
+        launch(args);
     }
 }
